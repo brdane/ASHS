@@ -1240,9 +1240,12 @@ public class SimpleHTTPServer
             {
                 connection.close();
             }
-            catch (Exception e)
-            {
-            }
+            catch (Exception _) {}
+            return;
+        }
+
+        if (!connection.isClosed())
+        {
             return;
         }
 
@@ -1346,6 +1349,4 @@ public class SimpleHTTPServer
         return "C:\\Users\\Administrator\\Desktop\\web_servers\\example\\".concat(addOnDir);
         //return "/home/brenden/Documents/web_servers/example/".concat(addOnDir);
     }
-
-
 }
