@@ -70,7 +70,7 @@ especially since it will flood your log daily if they are not blocked.
 
 When connection attempts are made to your server, they will look similar to this:
 ```
-<img width="957" height="99" alt="image" src="https://github.com/user-attachments/assets/a31cc66e-88a8-43d5-938c-0ed8b9f27f41" />
+[04-02-2026 11:19:17.538][example-hostname.co.uk (192.104.34.34) Attempt to access path: 'search-page'
 ```
 Each attempt will be logged as: date, time, hostname, IP address, and the action that is being taken to serve the client's request.
 
