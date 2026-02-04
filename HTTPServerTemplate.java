@@ -14,14 +14,18 @@ import java.net.Socket;
 public class HTTPServerTemplate extends SimpleHTTPServer
 {
 
+    @Override
     //This is the FIRST function is called RIGHT when a new client is requesting to connect.
     //There is a pointer to the Socket and ServerSocket. You can do whatever
     //authentication or security checks here, if you want.
     // to access these in later functions, use getConnection() and getSocket().
     //If you want the request-method, use getRequestMethod().
-    @Override
-    public void PreProcess(Socket inConnection, ServerSocket inSocket)
+    // Calling super. is HIGHLY Recommended because it processes your blacklist entries.
+    //If you wnat to take that into your own hands, remove it.
+    public boolean PreProcess(Socket inConnection, ServerSocket inSocket)
     {
+        super.PreProcess(inConnection, inSocket);
+
     }
 
     //This function is called when the URL requested is either "example.com",
@@ -32,9 +36,8 @@ public class HTTPServerTemplate extends SimpleHTTPServer
         //This function will send a response to the client/client's browser and closes
         //the connection. Specify the content-type in the first parameter, followed by the
         //actual contents in the second parameter.
-        SendOutput(contentType.Text, "Welcome to ShapeTap.");
+        SendOutput(contentType.Text, "Welcome to The Website.");
     }
-
 
     //This function is called when the URL requested is something like:
     //"example.com/path/to/the/thing.ext", or in other words, when
@@ -70,8 +73,6 @@ public class HTTPServerTemplate extends SimpleHTTPServer
         super.processParameterOfPath(path, parameter, value);
     }
 
-
-
     //Your main function only needs to look like this. The only two things you need to change:
     public static void main(String... args) throws Exception
     {
@@ -81,9 +82,9 @@ public class HTTPServerTemplate extends SimpleHTTPServer
         StartServer(8080,"HTTP Template up and running.", "HTTP Template didn't start!", false);
 
         while(true){new HTTPServerTemplate().processNextRequest();} //Change the class here to yours,
-                                                                    //otherwise your overridden functions
-                                                                    //will not be called. Have this function
-                                                                    //loop forever.
+                                          //otherwise your overridden functions
+                                         //will not be called. Have this function
+                                        //loop forever.
     }
 
 }
