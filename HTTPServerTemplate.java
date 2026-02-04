@@ -22,10 +22,14 @@ public class HTTPServerTemplate extends SimpleHTTPServer
     //If you want the request-method, use getRequestMethod().
     // Calling super. is HIGHLY Recommended because it processes your blacklist entries.
     //If you wnat to take that into your own hands, remove it.
+    //.
+    //Return false if you do not allow the connect, true if you do. Handle this function in
     public boolean PreProcess(Socket inConnection, ServerSocket inSocket)
     {
-        super.PreProcess(inConnection, inSocket);
-
+        //Before you run the super version of this function, run your own stuff, if you need to.
+        //the super version MUST run because it will automatically close the connection to the
+        //client if anything is found in the blacklist files.
+        return super.PreProcess(inConnection, inSocket);
     }
 
     //This function is called when the URL requested is either "example.com",
