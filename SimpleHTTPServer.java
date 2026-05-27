@@ -9,12 +9,16 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.net.InetAddress;
 
 //Describes as much as possible about the client connecting to our server.
 class Session
 {
+	
+	private int content_length = 0;
+	
     private String hostname = "n/a";
     private String http_version = "n/a";
     private String platform = "n/a";
@@ -42,17 +46,32 @@ class Session
     {
         for (String s : dump)
         {
-            if (s.startsWith("GET")) {
-                String[] part = s.split(" ");
+			// 1. Detect GET or POST at the start of the request
+			if (s.startsWith("GET") || s.startsWith("POST")) 
+			{
+				String[] part = s.split(" ");
 
-                if (part.length == 3) {
-                    fetch_url = part[1];
-                    http_version = part[2];
-                }
-            }
+				if (part.length == 3) 
+				{
+					SimpleHTTPServer.request_method = part[0]; // Update global request method
+					fetch_url = part[1];
+					http_version = part[2];
+				}
+			}
+			
             String[] parts = s.split(": ");
 
-            if (parts.length == 2) {
+            if (parts.length == 2) 
+			{
+				// 2. Capture the Content-Length header for POST bodies
+				if (parts[0].equalsIgnoreCase("Content-Length")) 
+				{
+					try 
+					{
+						content_length = Integer.parseInt(parts[1].trim());
+					} catch (NumberFormatException ignored) {}
+				}
+				
                 if (parts[0].contains("sec-ch-ua-platform")) {
                     platform = parts[1].replaceAll("\"", "");
                 }
@@ -95,7 +114,7 @@ class Session
                     try {
                         InetAddress inBoi = InetAddress.getByName(client_ip);
                         hostname = inBoi.getHostName();
-                    } catch (Exception _) {
+                    } catch (Exception ignored) {
                     }
                 }
 
@@ -125,6 +144,8 @@ class Session
             }
         }
     }
+	
+	public int getContentLength() { return content_length; }
 
     public String getSessionInfo()
     {
@@ -321,7 +342,7 @@ public class SimpleHTTPServer
             return hexString.toString();
         }
 
-        catch(Exception _) {}
+        catch(Exception ignored) {}
 
         return "";
     }
@@ -535,7 +556,7 @@ public class SimpleHTTPServer
             connection.close();
             connection = null;
         }
-        catch(IOException _)
+        catch(IOException ignored)
         {
             log("Could not stop server... should we be worried?");
         }
@@ -1187,7 +1208,6 @@ public class SimpleHTTPServer
     }
 
     //Overridable End
-
     public final int paramIndex(String[] in, String p_name)
     {
         int result = -1;
@@ -1202,17 +1222,29 @@ public class SimpleHTTPServer
 
         return result;
     }
+	
+	
+	public void POSTRequest(String data)
+	{
+		if (session.getFetchURL().equals("/post_test"))
+		{
+			SendOutput(contentType.Text, "You sent a POST message to ShapeTap's POST testing page.. .you did the thing!");
+		}
+		else
+		{
+			SendOutput(contentType.Text, "Thanks for sending a POST request to ShapeTap.. you are really smart!");
+		}
+	}
+
 
     public final void processNextRequest() throws Exception
     {
-        if (!newClientIncoming())
-        {
-            return;
-        }
+        if (!newClientIncoming()) return;
 
         BufferedReader inStream = new BufferedReader(new InputStreamReader(connection.getInputStream()));
         String full = "";
         String line;
+        boolean bHandled = false;
 
         // in a try/catch block due to occasional connection reset, which throws an IOException.
         try
@@ -1240,17 +1272,31 @@ public class SimpleHTTPServer
             {
                 connection.close();
             }
-            catch (Exception _) {}
+            catch (Exception ignored) {}
             return;
         }
+		
+		String payload = "";
+        if ("POST".equalsIgnoreCase(getRequestMethod()) && session.getContentLength() > 0) 
+		{
+            char[] buffer = new char[session.getContentLength()];
+            int read = inStream.read(buffer, 0, session.getContentLength());
+			
+            if (read > 0) 
+			{
+                payload = new String(buffer, 0, read);
+            }
+            
+			log("Received POST Data: \n" + payload);
+			POSTRequest(payload);
+        }
 
-        if (!connection.isClosed())
+        if (connection.isClosed())
         {
             return;
         }
 
         String parameter_line = session.getFetchURL().substring(1);
-        boolean bHandled = false;
 
         if (!parameter_line.isEmpty())
         {
@@ -1268,7 +1314,7 @@ public class SimpleHTTPServer
                 {
                     current_path = current_path.concat(path).concat("/");
 
-                    if (path.contains("?"))
+                    if ( (path.contains("?")) && (!parameter_line.endsWith("?")) )
                     {
                         String[] paramString = path.split("\\?");
 
@@ -1325,15 +1371,27 @@ public class SimpleHTTPServer
                     }
                 }
                 if (!bHandled)
-                {
-                    if ((paths[paths.length - 1].contains(".")) && (getRequestMethod().equals("GET"))) {
-                        processRequestForFile(paths);
-                    }
-                    else
-                    {
-                        processPath(paths);
-                    }
-                }
+				{
+					if ("POST".equalsIgnoreCase(getRequestMethod())) 
+					{
+						// Handle your POST paths here
+						if (session.getFetchURL().equals("/a")) 
+						{
+							SendOutput(contentType.Text, "POST request received! Your payload was: " + payload);
+						} 
+						else 
+						{
+							SendOutput(contentType.Text, "POST received on path: " + session.getFetchURL());
+						}
+					}
+					else if ((paths[paths.length - 1].contains(".")) && (getRequestMethod().equals("GET"))) {
+						processRequestForFile(paths);
+					}
+					else
+					{
+						processPath(paths);
+					}
+				}
             }
         }
         else
@@ -1342,7 +1400,7 @@ public class SimpleHTTPServer
         }
     }
 
-    // Returns your base directory for your server. Change this to where ever your server
+    // Returns your base directory for your server. Change this to where ever your server/website
     //files are located.
     public static String BaseDirectory(String addOnDir)
     {
